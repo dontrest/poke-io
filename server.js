@@ -45,3 +45,4 @@ fs.readFile(__dirname+'/patch/pokemon-with-type.json', 'utf8', function (err, da
   }
   console.log(pokemon[4]);
 });
+console.log('test');
