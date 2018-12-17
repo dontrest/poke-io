@@ -1,0 +1,9 @@
+[
+    {
+        "id" : 0 ,
+        "name" : "testmap" ,
+        "width" : 100 ,
+        "height" : 20 ,
+        "spawn" : [{"type" : "pokemon","id":17 ,"area" : [20,80] ,"max":15}]
+    }
+]
