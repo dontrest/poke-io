@@ -8,7 +8,9 @@ io.sockets.on('connection', function(socket){
     socket.on('connection' , data=>{
         
     });
+    socket.on('authen' ,data=>{
 
+    });
     socket.on('choose_char' , data=>{
         
     });
