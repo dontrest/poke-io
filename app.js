@@ -42,9 +42,11 @@ for(let m = 0 ; m< maps.length ; m++){
 //     console.log(map);
 // });
 var last_time = new Date().getMilliseconds();
+var last_nano_time = process.hrtime();
+console.log(last_nano_time);
 while(true){
     let alpha = new Date().getMilliseconds()-last_time;
-    console.log('alpha = '+alpha)
+    //console.log('alpha = '+alpha)
     last_time = new Date().getMilliseconds();
     for(let i = 0 ; i<maps.length ;i++){
         //for activity
@@ -78,7 +80,6 @@ while(true){
                 case 'move' :
                     let d = en.brain.duration - alpha;
                     if(d<=0){
-                        console.log("*****move*****");
                         let round_walk = 1+ Math.floor(Math.abs(d)/100);
                         en.brain.duration = Math.abs(d)%100;
                         let loop_walk = 0 ;
@@ -88,6 +89,7 @@ while(true){
                                 en.brain.position.r-=0.1;
                                 en.x+= Number((round_walk*0.1 *coor[en.brain.position.d][0]).toFixed(1));
                                 en.y+= Number((round_walk*0.1 *coor[en.brain.position.d][1]).toFixed(1));
+                                en.direction = en.x >en.brain.possition.x ? 1 : 0;
                             }else{
                                 en.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+1000)}
                                 en.direction = en.direction ? 0 : 1;
