@@ -1,16 +1,18 @@
+
+const MOVE_DELAY = 250;
 const fs = require('fs');
 var io = require('socket.io')(9999);
 
 var session_token = [{}];
 const coor =[
     [1,0],
-    [0.5,0.5],
+    [0.707,0.707],
     [0,1],
-    [-0.5,0.5],
+    [-0.707,0.707],
     [-1,0],
-    [-0.5,-0.5],
+    [-0.707,-0.707],
     [0,-1],
-    [0.5,-0.5]
+    [0.707,-0.707]
 ];
 io.sockets.on('connection', function(socket){
     console.log('a user connected');
@@ -31,23 +33,26 @@ io.sockets.on('connection', function(socket){
     });
 });
 
+
+
+
 var maps = JSON.parse(fs.readFileSync("patch/maps.json","utf-8"));
 var pokemon = JSON.parse(fs.readFileSync("patch/pokemon.json" , "utf-8"));
 for(let m = 0 ; m< maps.length ; m++){
     initMap(maps[m]);
-    console.log(maps[m]);
+    //console.log(maps[m]);
 }
-// maps.forEach(map => {
-//     initMap(map);
-//     console.log(map);
-// });
-var last_time = new Date().getMilliseconds();
-var last_nano_time = process.hrtime();
-console.log(last_nano_time);
-while(true){
-    let alpha = new Date().getMilliseconds()-last_time;
-    //console.log('alpha = '+alpha)
-    last_time = new Date().getMilliseconds();
+const FREQ = 100;
+function loop () {
+    const tickStart = Date.now();
+    updateWorld(); // does all the things
+    setTimeout(loop, FREQ - (Date.now() - tickStart))
+}
+var last_time = Date.now();
+
+function updateWorld(){
+    let alpha = Date.now() - last_time;
+    last_time = Date.now();
     for(let i = 0 ; i<maps.length ;i++){
         //for activity
         let map = maps[i];
@@ -60,7 +65,7 @@ while(true){
                     if(en.brain.duration<=0){
                         let ran_event = Math.round(Math.random()*2);// random 0,1 [0=wait][1=move]
                         if(ran_event){
-                            en.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+1000)}
+                            en.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+2000)}
                             en.direction = en.direction ? 0 : 1;
                         }else{
                             // newX = oldX (+ or -) 5-15
@@ -70,9 +75,9 @@ while(true){
                                     "y" : en.y,
                                     "d" : Math.floor(Math.random()*8),
                                     "r" : Math.floor(Math.random()*7+1)*2,
-                                    "s" : 100
+                                    "s" : MOVE_DELAY
                                 },
-                                "duration" :  100
+                                "duration" :  MOVE_DELAY
                             }
                         }
                     }
@@ -81,17 +86,30 @@ while(true){
                     let d = en.brain.duration - alpha;
                     if(d<=0){
                         let round_walk = 1+ Math.floor(Math.abs(d)/100);
-                        en.brain.duration = Math.abs(d)%100;
+                        en.brain.duration = Math.abs(d)%MOVE_DELAY ? MOVE_DELAY:Math.abs(d)%MOVE_DELAY;
                         let loop_walk = 0 ;
                         while(loop_walk < round_walk){
                             loop_walk++;
                             if(en.brain.position.r != 0){
                                 en.brain.position.r-=0.1;
-                                en.x+= Number((round_walk*0.1 *coor[en.brain.position.d][0]).toFixed(1));
-                                en.y+= Number((round_walk*0.1 *coor[en.brain.position.d][1]).toFixed(1));
-                                en.direction = en.x >en.brain.possition.x ? 1 : 0;
+                                en.brain.position.r = Number(en.brain.position.r.toFixed(1));
+                                if((en.brain.position.d == 0 ||  en.brain.position.d == 1  ||  en.brain.position.d == 7) && en.x >= map.width){
+                                    en.x = map.width;
+                                }else if((en.brain.position.d == 3 ||  en.brain.position.d ==4  ||  en.brain.position.d == 5) && en.x <= 0){
+                                    en.x = 0;
+                                }else{
+                                    en.x= scaleNum(en.x + (round_walk*0.1 *coor[en.brain.position.d][0]) , 1);
+                                }
+                                if((en.brain.position.d == 2 ||  en.brain.position.d == 1  ||  en.brain.position.d == 3) && en.y >= map.height){
+                                    en.y = map.height;
+                                }else if((en.brain.position.d == 5 ||  en.brain.position.d ==6  ||  en.brain.position.d == 7) && en.y <= 0){
+                                    en.y = 0;
+                                }else{
+                                    en.y= scaleNum(en.y + (round_walk*0.1 *coor[en.brain.position.d][1]),1);
+                                }
+                                en.direction = en.x >en.brain.position.x ? 1 : 0;
                             }else{
-                                en.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+1000)}
+                                en.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+2000)}
                                 en.direction = en.direction ? 0 : 1;
                                 loop_walk=round_walk;
                             }
@@ -101,9 +119,11 @@ while(true){
                     }
                 break;
             }
-        }
-        console.log(enemy);
+        }       
+        io.sockets.emit('update_world' , map);
+        //console.log(enemy);
     }
+    
 }
 
 function initMap(map){
@@ -120,8 +140,8 @@ function initMap(map){
                 "id" : spawn.id,
                 "name" : spawn.type === "pokemon"? pokemon[spawn.id].name :null
             }
-            // enemy.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+1000)}
-            enemy.brain = {"event" : "wait", "duration": Math.round(Math.random()*10)}// down wait time for test
+            enemy.brain = {"event" : "wait", "duration": Math.round(Math.random()*1000+2000)}
+            //enemy.brain = {"event" : "wait", "duration": Math.round(Math.random()*10)}// down wait time for test
             enemy.status = 0;
             enemy.x = Math.floor(((Math.random()) * (spawn.area[1]-spawn.area[0])) +spawn.area[0]); 
             enemy.y = Math.floor(Math.random() * map.height);
@@ -131,3 +151,11 @@ function initMap(map){
     }
 }
 
+function minusFloat( f1, f2,scale){
+    return Number((f1 - f2).toFixed(scale)); 
+}
+function scaleNum(d ,scale){
+    return Number((d).toFixed(scale)); 
+}
+
+loop ();
