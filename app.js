@@ -33,9 +33,6 @@ io.sockets.on('connection', function(socket){
     });
 });
 
-
-
-
 var maps = JSON.parse(fs.readFileSync("patch/maps.json","utf-8"));
 var pokemon = JSON.parse(fs.readFileSync("patch/pokemon.json" , "utf-8"));
 for(let m = 0 ; m< maps.length ; m++){
